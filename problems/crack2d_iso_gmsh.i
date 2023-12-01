@@ -11,46 +11,25 @@
   [./block1]
     strain = FINITE
     add_variables = true
-    generate_output = 'stress_yy strain_yy vonmises_stress'
+    generate_output = 'stress_yy strain_yy vonmises_stress max_principal_stress effective_plastic_strain'
   [../]
 []
 
 [Materials]
+  [./fplastic]
+    type = FiniteStrainPlasticMaterial
+    block = all
+    yield_stress='0. 445. 0.05 610. 0.1 680. 0.38 810. 0.95 920. 2. 950.'
+  [../]
   [./elasticity_tensor]
-    type = ComputeIsotropicElasticityTensor
-    youngs_modulus = 2.1e5
-    poissons_ratio = 0.3
-  [../]
-  [./stress]
-    type = ComputeMultiPlasticityStress
-    ep_plastic_tolerance = 1e-9
-    plastic_models = J2
-  [../]
-[]
-
-[UserObjects]
-  [./hardening]
-    type = TensorMechanicsHardeningCubic
-    value_0 = 2.4e2
-    value_residual = 3.0e2
-    internal_0 = 0
-    internal_limit = 0.005
-  [../]
-  [./J2]
-    type = TensorMechanicsPlasticJ2
-    yield_strength = hardening
-    yield_function_tolerance = 1E-9
-    internal_constraint_tolerance = 1E-9
+    type = ComputeElasticityTensor
+    block = all
+    C_ijkl = '2.827e5 1.21e5 1.21e5 2.827e5 1.21e5 2.827e5 0.808e5 0.808e5 0.808e5'
+    fill_method = symmetric9
   [../]
 []
 
 [BCs]
-  [xfix]
-    type = DirichletBC
-    variable = disp_x
-    boundary = bottom
-    value = 0
-  []
   [yfix]
     type = DirichletBC
     variable = disp_y
@@ -61,7 +40,7 @@
     type = FunctionDirichletBC
     variable = disp_y
     boundary = top
-    function = '0.001*t'
+    function = '0.0005*t'
   []
 []
 
@@ -75,8 +54,8 @@
 [Executioner]
   type = Transient
   dt = 0.25
-  end_time = 20
-
+  end_time = 40
+  dtmin = 1e-10
   solve_type = 'PJFNK'
 
   petsc_options = '-snes_ksp_ew'
@@ -85,14 +64,24 @@
 []
 
 [Postprocessors]
-  [./ave_stress_bottom]
+  [./ave_stress_yy_top]
     type = SideAverageValue
     variable = stress_yy
     boundary = top
   [../]
-  [./ave_strain_bottom]
+  [./ave_strain_yy_top]
     type = SideAverageValue
     variable = strain_yy
+    boundary = top
+  [../]
+  [./ave_max_pstress_top]
+    type = SideAverageValue
+    variable = max_principal_stress
+    boundary = top
+  [../]
+  [./ave_estrain_top]
+    type = SideAverageValue
+    variable = effective_plastic_strain
     boundary = top
   [../]
 []

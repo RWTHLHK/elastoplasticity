@@ -9,7 +9,7 @@ $PhysicalNames
 1 18 "left"
 1 20 "crack_interface1"
 1 21 "crack_interface2"
-2 19 "block"
+2 19 "all"
 $EndPhysicalNames
 $Entities
 10 13 4 0
