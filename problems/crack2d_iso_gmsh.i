@@ -1,47 +1,65 @@
 [Mesh]
-  type = FileMesh
-  file = crack.msh
+  [./cube]
+  type = GeneratedMeshGenerator
+  dim = 3
+  nx = 10
+  ny = 10
+  nz = 10
+  [../]
 []
 
 [GlobalParams]
-  displacements = 'disp_x disp_y'
+  displacements = 'disp_x disp_y disp_z'
 []
 
 [Modules/TensorMechanics/Master]
   [./block1]
     strain = FINITE
     add_variables = true
-    generate_output = 'stress_yy strain_yy vonmises_stress max_principal_stress effective_plastic_strain'
+    generate_output = 'stress_yy strain_yy vonmises_stress max_principal_stress'
+  [../]
+[]
+
+[Functions]
+  [./top_pull]
+    type = ParsedFunction
+    expression = t*(0.0625)
   [../]
 []
 
 [Materials]
-  [./fplastic]
-    type = FiniteStrainPlasticMaterial
-    block = all
-    yield_stress='0. 445. 0.05 610. 0.1 680. 0.38 810. 0.95 920. 2. 950.'
+  [./isotropic_plasticity]
+    type = IsotropicPlasticityStressUpdate
+    yield_stress = 300.0
+    hardening_constant = 500
+    output_properties = effective_plastic_strain
+    outputs = exodus
+  [../]
+  [./radial_return_stress]
+    type = ComputeMultipleInelasticStress
+    tangent_operator = elastic
+    inelastic_models = 'isotropic_plasticity'
   [../]
   [./elasticity_tensor]
-    type = ComputeElasticityTensor
-    block = all
-    C_ijkl = '2.827e5 1.21e5 1.21e5 2.827e5 1.21e5 2.827e5 0.808e5 0.808e5 0.808e5'
-    fill_method = symmetric9
+    type = ComputeIsotropicElasticityTensor
+    youngs_modulus = 2.1e5
+    poissons_ratio = 0.3
   [../]
 []
 
 [BCs]
-  [yfix]
-    type = DirichletBC
-    variable = disp_y
-    boundary = bottom
-    value = 0
-  []
-  [ydisp]
+  [./y_pull_function]
     type = FunctionDirichletBC
     variable = disp_y
     boundary = top
-    function = '0.0005*t'
-  []
+    function = top_pull
+  [../]
+  [./y_bot]
+    type = DirichletBC
+    variable = disp_y
+    boundary = bottom
+    value = 0.0
+  [../]
 []
 
 [Preconditioning]
@@ -53,14 +71,22 @@
 
 [Executioner]
   type = Transient
-  dt = 0.25
-  end_time = 40
-  dtmin = 1e-10
   solve_type = 'PJFNK'
 
   petsc_options = '-snes_ksp_ew'
   petsc_options_iname = '-pc_type -sub_pc_type -pc_asm_overlap -ksp_gmres_restart'
   petsc_options_value = 'asm lu 1 101'
+
+  l_max_its = 50
+  nl_max_its = 50
+  nl_rel_tol = 1e-12
+  nl_abs_tol = 1e-10
+  l_tol = 1e-9
+
+  start_time = 0.0
+  end_time = 0.075
+  dt = 0.00125
+  dtmin = 0.0001
 []
 
 [Postprocessors]
@@ -74,14 +100,14 @@
     variable = strain_yy
     boundary = top
   [../]
-  [./ave_max_pstress_top]
+  [./av_max_pstress_top]
     type = SideAverageValue
     variable = max_principal_stress
     boundary = top
   [../]
-  [./ave_estrain_top]
-    type = SideAverageValue
-    variable = effective_plastic_strain
+  [./av_estrain_top]
+    type = SideAverageMaterialProperty
+    property = effective_plastic_strain
     boundary = top
   [../]
 []
