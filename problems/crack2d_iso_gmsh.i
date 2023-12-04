@@ -20,6 +20,32 @@
   [../]
 []
 
+[Variables]
+  [d_cp]   # damage variable
+    order = FIRST
+    family = LAGRANGE
+  []
+[]
+
+[Kernels]
+  [d_dot]
+    variable = d_cp
+    type = TimeDerivative
+  []
+  [./ACInterface]
+    type = ACInterface
+    variable = d_cp
+    mob_name = L
+    kappa_name = kappa
+  [../]
+  [./AllenCahn]
+    type = AllenCahn
+    variable = d_cp
+    mob_name = L
+    f_name = damage_energy
+  [../]
+[]
+
 [Functions]
   [./top_pull]
     type = ParsedFunction
@@ -44,6 +70,18 @@
     type = ComputeIsotropicElasticityTensor
     youngs_modulus = 2.1e5
     poissons_ratio = 0.3
+  [../]
+  [./constants]
+    type = GenericConstantMaterial
+    prop_names  = 'L   kappa'
+    prop_values = '1.0 0.5'
+  [../]
+  [./damage_energy]
+    type = ComputeLandauDamageEnergy
+    d = d_cp
+    alpha = 1.0
+    transition_property_name = effective_plastic_strain
+    critical_transition_value = 0.002
   [../]
 []
 
