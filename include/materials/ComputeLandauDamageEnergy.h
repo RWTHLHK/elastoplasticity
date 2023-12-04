@@ -5,7 +5,7 @@
 class ComputeLandauDamageEnergy : public Material
 {
 public:
-  ComputeLandauDamageEnergyl(const InputParameters & parameters);
+  ComputeLandauDamageEnergy(const InputParameters & parameters);
 
   static InputParameters validParams();
 
@@ -23,9 +23,9 @@ private:
   /// Coupled order parameter defining the crack
   const VariableValue & _d;
   /// deviation parameter from critical transition value
-  const MaterialProperty<Real> & _alpha;
+  const Real & _alpha;
   /// critical transition plastic strain or stress
-  const MaterialProperty<Real> & _critical_transition_value;
+  const Real & _critical_transition_value;
   /// property names of phase transition (effective_plastic_strain or maximal_principle_stress)
   const std::string & _transition_property_name;
 };
