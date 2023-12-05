@@ -21,28 +21,53 @@
 []
 
 [Variables]
-  [d_cp]   # damage variable
+  [dm]   # damage variable
     order = FIRST
-    family = LAGRANGE
+    family = MONOMIAL
   []
+[]
+
+[AuxVariables]
+  [./hist_max]
+    order = FIRST
+    family = MONOMIAL
+  [../]
+  [./curr_value]
+    order = CONSTANT
+    family = MONOMIAL
+  [../]
 []
 
 [Kernels]
   [d_dot]
-    variable = d_cp
+    variable = dm
     type = TimeDerivative
   []
   [./ACInterface]
     type = ACInterface
-    variable = d_cp
+    variable = dm
     mob_name = L
     kappa_name = kappa
   [../]
   [./AllenCahn]
     type = AllenCahn
-    variable = d_cp
+    variable = dm
     mob_name = L
-    f_name = damage_energy
+    f_name = f_loc
+  [../]
+[]
+
+[AuxKernels]
+  [./get_curr]
+    type = MaterialRealAux
+    property = effective_plastic_strain
+    variable = curr_value
+  [../]
+  [./get_hist_max]
+    type = ParsedAux
+    variable = hist_max
+    coupled_variables = 'curr_value hist_max'
+    expression = 'max(hist_max,curr_value)'
   [../]
 []
 
@@ -76,13 +101,17 @@
     prop_names  = 'L   kappa'
     prop_values = '1.0 0.5'
   [../]
-  [./damage_energy]
-    type = ComputeLandauDamageEnergy
-    d = d_cp
-    alpha = 1.0
-    transition_property_name = effective_plastic_strain
-    critical_transition_value = 0.002
-  [../]
+  [local_energy]
+    # Defines the function for the local free energy density as given in the
+    # problem, then converts units and adds scaling factor.
+    type = DerivativeParsedMaterial
+    block = 0
+    f_name = f_loc
+    coupled_variables = 'dm hist_max'
+    constant_names = 'alpha   epsilon0'
+    constant_expressions = '1.0 0.002'
+    function = 'alpha / 2 * (hist_max - epsilon0) * (1 - dm)^2 + alpha * epsilon0 / 4 *(1-dm)^4'
+  []
 []
 
 [BCs]
@@ -146,6 +175,11 @@
   [./av_estrain_top]
     type = SideAverageMaterialProperty
     property = effective_plastic_strain
+    boundary = top
+  [../]
+  [./av_damage_top]
+    type = SideAverageValue
+    variable = dm
     boundary = top
   [../]
 []
